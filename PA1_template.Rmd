@@ -7,19 +7,92 @@ output:
 
 
 ## Loading and preprocessing the data
-
-
+Unzip the Data and read the csv file
+```{r}
+unzip("activity.zip")
+activity <- read.csv("activity.csv")
+```
 
 ## What is mean total number of steps taken per day?
+Finding total number of steps per day
+```{r}
+agg <- aggregate(steps~date,data=activity, sum, na.rm=TRUE)
+colnames(agg)<-c("Date", "NumberOfSteps")
+```
 
+Create a histogram of the number of steps per day
+```{r}
+hist(as.numeric(agg$NumberOfSteps),main = "Histogram of Number of Steps per Day", xlab = "Number of Steps per Day")
+```
 
+Finding Mean and Median of the total number of steps
+```{r}
+mean(as.numeric(agg$NumberOfSteps))
+median(as.numeric(agg$NumberOfSteps))
+```
 
 ## What is the average daily activity pattern?
+Make a time series plot
+```{r}
+interval <- aggregate(steps ~ interval, data=activity, FUN=mean)
+plot(interval, type="l", main = "Time Series Plot", xlab = "Interval", ylab="Number of steps")
+```
 
+Interval which contains max number of steps:
+```{r}
+interval$interval[which.max(interval$steps)]
+```
 
 
 ## Imputing missing values
+Find the total number of missing values (NAs):
+```{r}
+sum(is.na(activity))
+```
+Fill missing Data with 5-min interval mean and update the data set
+```{r}
+for(i in 1:nrow(activity))
+{
+  if(is.na(activity$steps[i])) 
+    activity$steps[i] <- interval$steps[match(activity$interval[i],interval$interval)]
+}
+```
+###Repeat the first part
+Finding total number of steps per day
+```{r}
+agg <- aggregate(steps~date,data=activity, sum, na.rm=TRUE)
+colnames(agg)<-c("Date", "NumberOfSteps")
+```
+Create a histogram of the number of steps per day
+```{r}
+hist(as.numeric(agg$NumberOfSteps),main = "Histogram of Number of Steps per Day", xlab = "Number of Steps per Day")
+```
 
+Finding Mean and Median of the total number of steps
+```{r}
+mean(as.numeric(agg$NumberOfSteps))
+median(as.numeric(agg$NumberOfSteps))
+```
+**Mean values stays the same but therer is slight difference in meadian value.**
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+Create a new factor variable in the dataset with two levels - "weekday" and "weekend" indicating whether a given date is a weekday or weekend day.
+```{r}
+activity["day"] <- weekdays(as.Date(activity$date, "%Y-%m-%d"))
+activity$day[activity$day %in% c("Saturday", "Sunday")] <-"weekend"
+activity$day[activity$day!="weekend"] <-"weekday"
+activity$day <- as.factor(activity$day)
+head(activity)
+```
+
+Make a panel plot containing a time series plot 
+```{r}
+require("lattice")
+plotdata <- aggregate(steps ~ interval + day, data=activity, FUN=mean)
+xyplot(plotdata$steps~plotdata$interval|plotdata$day,type='l',layout=c(1,2), xlab = "Interval", ylab = "Steps", main="Time Series")
+
+
+```
+
